@@ -1,0 +1,15 @@
+0. Do GD as well. 
+XXXX1. Add regularization to SGD
+XXXXX2. Add cross validation functionality
+XXXXX3. Do a grid search for various U values on 1.
+4. Do L-BFGS with L2 regularization
+
+For all above,
+1. Apply all three algo to test data
+2. Apply to test as well
+
+Graphs (GD(maybe) vs SGD vs LBFGS):
+1. Number of iterations for convergence(Bar Chart)
+2. Measure of overfitting
+3. Convergence of algorithms
+4. After convergence, accuracy achieved on training and test data and validation set.

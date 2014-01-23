@@ -2,7 +2,10 @@ import numpy as np
 import math
 from numpy import linalg as LA
 
-LAMBDA = 0.01
+LAMBDA = 0
+LAMBDA0 = 0.02
+C=1.5
+E=1
 RUNS=100
 MU=0.1
 TR = 1
@@ -71,23 +74,19 @@ def calculate_label(matrix,betas):
 def modify_lambda(n):
 	#n is del RLCL
 	global LAMBDA
+	global LAMBDA0,C,E
 	global TR
 	global DEL_BETA
-
-	LAMBDA = DEL_BETA/DEL_LCL
-
-
+	#LAMBDA = DEL_BETA/DEL_LCL
 	# LAMBDA = abs(n)*0.0001
 	# print LAMBDA
-	
-
-
 	# if abs(n)<TR:
 	# 	LAMBDA = LAMBDA*0.2
 	# 	TR = float(TR)/5
 	# 	print "LAMBDAAAAAAAA"
 	# 	print LAMBDA
 	# 	print TR
+	LAMBDA = LAMBDA0/(1+100*LAMBDA0*C*E)
 
 def calculate_differential(matrix,betas):
 	global LCL1
@@ -112,6 +111,7 @@ def calculate_differential(matrix,betas):
 	return str(sum1)+','+str(sum2)
 
 def main():
+	global E
 	matrix=importdata(559,802,'/Users/suvir/Documents/Logistic Regression/train')
 	print "Started sorting"
 	matrix=matrix[matrix[:,600].argsort()]
@@ -119,18 +119,18 @@ def main():
 	#temp=np.ones(1,559)
 	save_to_file("array.bin",matrix)
 	betas=np.ones((1,801))
-	betas[0][:400].fill(0.01375)
-	betas[0][400:].fill(0.01375)
+	betas[0][:400].fill(0.002)
+	betas[0][400:].fill(0.002)
 	#Remember to randomize the dataset using random.randint(a,b)
 	for runs in range(RUNS):
 		#print runs
+		E = runs
 		for i in range(len(matrix)):
 			p=np.dot(betas,matrix[i][:801])
 			p=sigmoid(p)
 			y=matrix[i][801]
 			for j in range(len(matrix[i][:801])):
 				x=matrix[i][j]
-				DEL_BETA=LAMBDA*((y-p)*x-2*MU*betas[0][j])
 				betas[0][j] += LAMBDA*((y-p)*x-2*MU*betas[0][j])
 		print runs
 		print calculate_differential(matrix,betas)

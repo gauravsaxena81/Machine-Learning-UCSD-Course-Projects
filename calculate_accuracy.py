@@ -1,4 +1,5 @@
 import numpy as np
+import math
 """
 Load array from file
 """
@@ -13,10 +14,12 @@ def calculate_accuracy(betas_filename,data_filename):
 	count=0
 	for i in range(len(matrix)):
 		temp=np.dot(betas,matrix[i][:801])
+		temp=1/(1+math.exp(-temp))
 		if temp >= 0.5 and matrix[i][801] == 1:
 			count += 1
 		if temp < 0.5 and matrix[i][801] == 0:
 			count += 1
+	print count
 	print float(count)/float(len(matrix))
 
-calculate_accuracy("logistic_regression_beta_values_sorted.bin","test.bin")
+calculate_accuracy("logistic_regression_beta_values_with_regularization_sortedOnY.bin","normalized_test.bin")

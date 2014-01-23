@@ -75,7 +75,7 @@ def calculate_differential(matrix,betas):
 
 def main():
 	matrix=importdata(559,802,'/Users/suvir/Documents/Logistic Regression/train')
-	matrix=matrix[matrix[:,440].argsort()]
+	#matrix=matrix[matrix[:,440].argsort()]
 	#temp=np.ones(1,559)
 	save_to_file("array.bin",matrix)
 	betas=np.ones((1,801))
@@ -94,16 +94,22 @@ def main():
 		#if runs%20 == 0:
 	#		print runs
 		print calculate_differential(matrix,betas)
-	print betas
+	#print betas
 	save_to_file("logistic_regression_beta_values_sorted.bin",betas)
 	#calculate_label(matrix,betas)
-main()
+#main()
 
+matrix=importdata(239,802,'/Users/suvir/Documents/Logistic Regression/test')
+for i in range(len(matrix)):
+	matrix[i][:801]=np.divide(matrix[i][:801],LA.norm(matrix[i][:801]))
+np.savetxt("test.txt",matrix)
 #betas = load_from_file("experimental_betas.bin")
 #print np.max(betas)
 #print np.min(betas)
 #print np.median(betas)
 
+#matrix=importdata(559,802,'/Users/suvir/Documents/Logistic Regression/train')
+#save_to_file("normalized_train.bin",matrix)
 # count1=0
 # count0=0
 # matrix = load_from_file("train.bin")

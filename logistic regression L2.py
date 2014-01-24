@@ -1,9 +1,17 @@
 import numpy as np
 import math
 from numpy import linalg as LA
+<<<<<<< HEAD
 LAMBDA = 0.02
 LAMBDA0 = 1
 C = 1.5
+=======
+
+LAMBDA = 0
+LAMBDA0 = 0.02
+C=1.5
+E=1
+>>>>>>> 1348edeb118ed079ad0ec15cfd1700dbbb144ec5
 RUNS=100
 MU = 1e-2
 EPSILON = 0.001
@@ -73,8 +81,10 @@ def calculate_label(matrix,betas):
 def modify_lambda(n):
 	#n is del RLCL
 	global LAMBDA
+	global LAMBDA0,C,E
 	global TR
 	global DEL_BETA
+<<<<<<< HEAD
 
 	LAMBDA = abs(DEL_BETA/n)
 
@@ -84,12 +94,18 @@ def modify_lambda(n):
 	
 
 
+=======
+	#LAMBDA = DEL_BETA/DEL_LCL
+	# LAMBDA = abs(n)*0.0001
+	# print LAMBDA
+>>>>>>> 1348edeb118ed079ad0ec15cfd1700dbbb144ec5
 	# if abs(n)<TR:
 	# 	LAMBDA = LAMBDA*0.2
 	# 	TR = float(TR)/5
 	# 	print "LAMBDAAAAAAAA"
 	# 	print LAMBDA
 	# 	print TR
+	LAMBDA = LAMBDA0/(1+100*LAMBDA0*C*E)
 
 def calculate_differential(matrix,betas):
 	global LCL1
@@ -127,7 +143,12 @@ def calculateValidationAccuracy(matrix, betas):
 	return float(count) / len(matrix)
 
 def main():
+<<<<<<< HEAD
 	matrix=importdata(559,802,'train')
+=======
+	global E
+	matrix=importdata(559,802,'/Users/suvir/Documents/Logistic Regression/train')
+>>>>>>> 1348edeb118ed079ad0ec15cfd1700dbbb144ec5
 	print "Started sorting"
 	matrix_full = matrix[matrix[:,600].argsort()]
 	matrix = matrix_full[:400]
@@ -135,6 +156,7 @@ def main():
 	#temp=np.ones(1,559)
 	save_to_file("array.bin",matrix)
 	betas=np.ones((1,801))
+<<<<<<< HEAD
 	betas[0][:400].fill(0)
 	betas[0][400:].fill(0)
 	lcl = 10
@@ -147,6 +169,14 @@ def main():
 	#for runs in range(RUNS):
 	while abs(lcl - lastLcl) > EPSILON:
 		DEL_BETA = 0
+=======
+	betas[0][:400].fill(0.002)
+	betas[0][400:].fill(0.002)
+	#Remember to randomize the dataset using random.randint(a,b)
+	for runs in range(RUNS):
+		#print runs
+		E = runs
+>>>>>>> 1348edeb118ed079ad0ec15cfd1700dbbb144ec5
 		for i in range(len(matrix)):
 			p=np.dot(betas,matrix[i][:801])
 			p=sigmoid(p)

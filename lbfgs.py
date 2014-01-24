@@ -1,70 +1,50 @@
-from __future__ import print_function
+#from __future__ import print_function
 import numpy as np
 from numpy import linalg as LA
 from scipy import linalg, optimize
 from sklearn import cross_validation, metrics, linear_model
 from datetime import datetime
 import math
+import sys
 
-LAMBDA = 100
-RUNS=15
+def save_to_file(filename,matrix):
+	f = file(filename,"wb")
+	np.save(f,matrix)
+	f.close()
 
-def phi(t):
-    # logistic function
-    idx = t > 0
-    out = np.empty(t.size, dtype=np.float)
-    out[idx] = 1. / (1 + np.exp(-t[idx]))
-    exp_t = np.exp(t[~idx])
-    #try:
-    print(exp_t)
-    out[~idx] = exp_t / (1. + exp_t)
-    # #except:
-    
-    # print out.shape
-    # print e
-    return out
-
-def loss(w, X, y, alpha):
-    # loss function to be optimized, it's the logistic loss
-    z = X.dot(w)
-    yz = y * z
-    idx = yz > 0
-    out = np.zeros_like(yz)
-    out[idx] = np.log(1 + np.exp(-yz[idx]))
-    out[~idx] = (-yz[~idx] + np.log(1 + np.exp(yz[~idx])))
-    out = out.sum() + .5 * alpha * w.dot(w)
-    return out
+def sigmoid(x):
+	#print x
+	return 1/(1+math.exp(-x))
 
 def gradient(w, X, y, alpha):
-    # gradient of the logistic loss
-    z = X.dot(w)
-    
-    z = phi(y * z)
-    
-    z0 = (z - 1) * y
-    grad = X.T.dot(z0) + alpha * w
-    return grad
+	gradient_vector=np.ones((1,801))
+	#print w.shape
+	for j in range(w.shape[0]):
+		sum=0
+		for i in range(X.shape[0]):
+			Yi = y[0][i]
+			Pi=np.dot(w,X[i])
+			Pi=sigmoid(Pi)
+			Xij=X[i][j]
+			sum += (Yi - Pi)*Xij - 2*alpha*w[j] 
+		gradient_vector[0][j]=sum
+	#print gradient_vector.shape
+	return gradient_vector.T
 
-def hessian(s, w, X, y, alpha):
-    z = X.dot(w)
-    z = phi(y * z)
-    d = z * (1 - z)
-    wa = d * X.dot(s)
-    Hs = X.T.dot(wa)
-    out = Hs + alpha * s
-    return  out
-
-def grad_hess(w, X, y, alpha):
-    # gradient AND hessian of the logistic
-    z = X.dot(w)
-    z = phi(y * z)
-    z0 = (z - 1) * y
-    grad = X.T.dot(z0) + alpha * w
-    def Hs(s):
-        d = z * (1 - z)
-        wa = d * X.dot(s)
-        return X.T.dot(wa) + alpha * s
-    return grad, Hs
+def RLCL(w,X,y,alpha):
+	#This is the function to be minimized
+	total_rlcl = 0
+	for i in range(X.shape[0]):
+		Yi = y[0][i]
+		tPi=np.dot(w,X[i])
+		Pi=sigmoid(tPi)
+		try:
+			total_rlcl += Yi*math.log(Pi) + (1-Yi)*math.log(1-Pi) - alpha*np.dot(w,w.T)
+		except ValueError as e:
+			save_to_file("lbfgs_betas.bin",w)
+			sys.exit("Bye Bye World")
+	print -total_rlcl
+	return -total_rlcl
 
 """
 Import data from file to a numpy array
@@ -82,7 +62,10 @@ def importdata(m,n,filename):
 			matrix[j][0]=1
 			#Y matrix has the labels
 			if i == 0:
-				Y[0][j]=int(l[i])
+				if int(l[i])==1:
+					Y[0][j]=1
+				else:
+					Y[0][j]=0
 			else:
 				col = int(l[i].split(':')[0])
 				val = int(l[i].split(':')[1])
@@ -91,75 +74,24 @@ def importdata(m,n,filename):
 	#Normalize everything 
 	for i in range(len(matrix)):
 	 	matrix[i]=np.divide(matrix[i],LA.norm(matrix[i]))
-
+	print "Started sorting"
+	matrix=matrix[matrix[:,600].argsort()]
+	print "Finished sorting"
 	return matrix,Y
 
 def main():
 	X,y=importdata(559,801,'/Users/suvir/Documents/Logistic Regression/train')
-	w=np.ones((1,800))
-	w[0][:400].fill(0.0125)
-	w[0][400:].fill(-0.0125)
-	alpha=1
-	#print Y[0]
-
-	# conjugate gradient
-	print('CG')
-	timings_cg = []
-	precision_cg = []
-	w0 = np.zeros(X.shape[1])
-	start = datetime.now()
-	def callback(x0):
-	    prec = linalg.norm(gradient(x0, X, y, alpha), np.inf)
-	    precision_cg.append(prec)
-	    timings_cg.append((datetime.now() - start).total_seconds())
-	callback(w0)
-	w = optimize.fmin_cg(loss, w0, fprime=gradient, 
-	        args=(X, y, alpha), gtol=1e-6, callback=callback, maxiter=200)
-
-	## truncated newton
-	print('TNC')
-	timings_tnc = []
-	precision_tnc = []
-	w0 = np.zeros(X.shape[1])
-	start = datetime.now()
-	def callback(x0):
-	    prec = linalg.norm(gradient(x0, X, y, alpha), np.inf)
-	    precision_tnc.append(prec)
-	    timings_tnc.append((datetime.now() - start).total_seconds())
-	callback(w0)
-	out = optimize.fmin_ncg(loss, w0, fprime=gradient,
-	        args=(X, y, alpha), avextol=1e-10,
-	        callback=callback, maxiter=40)
-
-	print('L-BFGS')
-	timings_lbfgs = []
-	precision_lbfgs = []
-	w0 = np.zeros(X.shape[1])
-	start = datetime.now()
-	def callback(x0):
-	    prec = linalg.norm(gradient(x0, X, y, alpha), np.inf)
-	    precision_lbfgs.append(prec)
-	    timings_lbfgs.append((datetime.now() - start).total_seconds())
-	callback(w0)
-
-	out = optimize.fmin_l_bfgs_b(loss, w0, fprime=gradient, 
-	        args=(X, y, alpha), pgtol=1e-10, maxiter=200, 
-	        maxfun=250, factr=1e-30, callback=None)
-
-	# #Remember to randomize the dataset using random.randint(a,b)
-	# for runs in range(RUNS):
-	# 	print runs
-	# 	for i in range(len(matrix)):
-	# 		p=np.dot(betas,matrix[i][:801])
-	# 		p=sigmoid(p)
-	# 		y=matrix[i][801]
-	# 		for j in range(len(matrix[i][:801])):	
-	# 			x=matrix[i][j]
-	# 			betas[0][j] += LAMBDA*(y-p)*x
-	# 	#if runs%20 == 0:
-	# #		print runs
-	# 	print calculate_differential(matrix,betas)
-	# print betas
-	# save_to_file("logistic_regression_beta_values_sorted.bin",betas)
-	# #calculate_label(matrix,betas)
+	w=np.ones((1,801))
+	w[0].fill(5)
+	#print w.shape
+	alpha=0
+	x,f,d = optimize.fmin_l_bfgs_b(RLCL, w, fprime=gradient, args=(X, y, alpha),approx_grad=0, 
+		bounds=None, m=10, factr=10000000.0, pgtol=1e-05, epsilon=1e-05, iprint=0, maxfun=15000, 
+		maxiter=2000, disp=None, callback=None)
+	save_to_file("lbfgs_betas.bin",x)
+	#print f
+	#print d['warnflag']
+	#print d['grad']
 main()
+
+#X,y=importdata(559,801,'/Users/suvir/Documents/Logistic Regression/train')

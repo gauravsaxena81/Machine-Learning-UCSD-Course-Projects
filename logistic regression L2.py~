@@ -1,12 +1,10 @@
 import numpy as np
 import math
 from numpy import linalg as LA
-LAMBDA = 0.02
-LAMBDA0 = 1
-C = 1.5
+
+LAMBDA = 0.01
 RUNS=100
-MU = 1e-2
-EPSILON = 0.001
+MU=0.1
 TR = 1
 DEL_BETA=0
 LCL1=0
@@ -96,56 +94,37 @@ def calculate_differential(matrix,betas):
 	global LCL2
 	sum1 = 0
 	sum2 = 0
-	count = 0
 	for i in range(len(matrix)):
 		p=np.dot(betas,matrix[i][:801])
 		p=sigmoid(p)
 		y=matrix[i][801]
+		LCL1 = y*math.log(p)+(1-y)*math.log(1-p)
+		LCL2 = y*math.log(p)+(1-y)*math.log(1-p)
 		for j in range(len(matrix[i][:801])):
 			x=matrix[i][j]
-			sum1 += (y-p)*x
+			sum1 += (y-p)*x-2*MU*betas[0][j]
 			#sum1 is del(RLCL)
 			#sum2 is LCL
-		sum1 = sum1 - 2*MU*betas[0][j]		
-		sum2 += y*math.log(p+0.000001)+(1-y)*math.log(1-p+0.000001)
-		if p < 0.5 and y == 0 :
-			count += 1
-		if p >= 0.5 and y == 1 :
-			count += 1
-		
-	return sum1, sum2, float(count) / len(matrix)
-def calculateValidationAccuracy(matrix, betas):
-	count = 0
-	for i in range(len(matrix)):
-		p=np.dot(betas,matrix[i][:801])
-		p=sigmoid(p)
-		y=matrix[i][801]
-		if p < 0.5 and y == 0 :
-			count += 1
-		if p >= 0.5 and y == 1 :
-			count += 1
-	return float(count) / len(matrix)
+			
+
+			sum2 += y*math.log(p)+(1-y)*math.log(1-p)
+	modify_lambda(sum1)
+	return str(sum1)+','+str(sum2)
 
 def main():
+	global DEL_BETA
 	matrix=importdata(559,802,'train')
 	print "Started sorting"
-	matrix_full = matrix[matrix[:,600].argsort()]
-	matrix = matrix_full[:400]
+	matrix=matrix[matrix[:,600].argsort()]
 	print "Finished sorting"
 	#temp=np.ones(1,559)
 	save_to_file("array.bin",matrix)
 	betas=np.ones((1,801))
-	betas[0][:400].fill(0)
-	betas[0][400:].fill(0)
-	lcl = 10
-	lastLcl = 0
-	DEL_RLCL = 10
-	lastValAccuracy = 0
+	betas[0][:400].fill(0.002)
+	betas[0][400:].fill(0.002)
 	#Remember to randomize the dataset using random.randint(a,b)
-	global LAMBDA
-	runs = 0
-	#for runs in range(RUNS):
-	while abs(lcl - lastLcl) > EPSILON:
+	for runs in range(RUNS):
+		#print runs
 		DEL_BETA = 0
 		for i in range(len(matrix)):
 			p=np.dot(betas,matrix[i][:801])
@@ -153,17 +132,12 @@ def main():
 			y=matrix[i][801]
 			for j in range(len(matrix[i][:801])):
 				x=matrix[i][j]
+				DEL_BETA += LAMBDA*(y-p)*x
 				betas[0][j] += LAMBDA*((y-p)*x-2*MU*betas[0][j])
-		lastLcl = lcl
-		DEL_RLCL, lcl, trainAccuracy = calculate_differential(matrix,betas)
-		valAccuracy = calculateValidationAccuracy(matrix_full[401:], betas)
-		if lastValAccuracy < valAccuracy:
-			lastValAccuracy = valAccuracy
-			bestBetas = betas
-		print runs, DEL_RLCL, lcl
-		runs += 1
-		#LAMBDA = LAMBDA0 / (1 + runs * C)
-	#print betas
-	save_to_file("logistic_regression_beta_values_with_regularization_sortedOnY.bin",bestBetas)
-	#calculate_label(matrix,betas)i
+		print runs
+		print calculate_differential(matrix,betas)
+	print betas
+	save_to_file("logistic_regression_beta_values_with_regularization_sortedOnY.bin",betas)
+	#calculate_label(matrix,betas)
+
 main()

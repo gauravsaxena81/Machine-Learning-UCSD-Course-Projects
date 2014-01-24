@@ -1,15 +1,22 @@
 \documentclass{acm_proc_article-sp}
-
 \begin{document}
 
 \title{Gender classification using Logistic Regression}
 
 \numberofauthors{2} %  
 \author{
+\alignauthor
 % 1st. author
-Suvir Jain,
+Suvir Jain,\\
+\affaddr{Computer Science Department}\\
+\affaddr{University of California, San Diego}\\
+\email{suj011@cs.ucsd.edu}
 % 2nd. author
-Gaurav Saxena
+\alignauthor
+Gaurav Saxena\\
+\affaddr{Computer Science Department}\\
+\affaddr{University of California, San Diego}\\
+\email{gsaxena@cs.ucsd.edu}
 }
 
 \maketitle
@@ -19,20 +26,14 @@ Gender classification is important in several applications like tailoring person
 
 \section{Introduction}
 
-What is the problem?
-
 Logistic Regression is a statistical classification model to determine the probabilities of the outcomes based on the occurrence of certain features. The process of deriving this model is called training the model. This process finds weights for the features such that their linear combination can be used to determine the 'most probable' outcome. However, linear models are unbounded and thus, they cannot be directly used to calculate the probabilities, which are bounded between 0 and 1. To achieve these bounds this process uses a squashing function which reduces the range of the linear function to be between 0 and 1.
 
 To train this model a data set is used, which contains various observations of an experiment. Each observation of the experiment consists of the features and the outcome. For example, let us consider an observation of the the data set [1] for gender classification. Each observation of this data set consists of 800 features and their values for a person. It also contains a label to identify the person as male or female. This label acts as the outcome of the experiment.
 
-Why is it interesting and important?
-Why is it hard? (E.g., why do naive approaches fail?)
-
-This data can be used to deduce the optimal values of the weights for the features by solving a system of non-linear equations in 800 variables. However, achieving this by mathematical methods may be intractable. Thus, numerical methods like Gradient Descent[2] are used to find optimal values. However, gradient descent for large data sets tend to be slow. This is because it has a time complexity of $O(n^{2}d)$[3] where n is the number of observations and d is the number of dimensions. Thus, we use other numerical methods like Stochastic Gradient Descent(SGD) and L-BFGS which are less accurate but are faster [4].
+This data can be used to deduce the optimal values of the weights for the features by solving a system of non-linear equations in 800 variables. However, achieving this by mathematical methods may be intractable. Thus, numerical methods like Gradient Descent[2] are used to find optimal values. \\
+However, gradient descent for large data sets tend to be slow. This is because it has a time complexity of $O(n^{2}d)$[3] where n is the number of observations and d is the number of dimensions. Thus, we use other numerical methods like Stochastic Gradient Descent(SGD) and L-BFGS which are less accurate but are faster [4].
 
 Although, numerical methods make hard mathematical problems tractable, their convergence is dependent on a number of parameters. These parameters are called hyperparameters. Better hyperparameters can result in better results(global optima), faster convergence and less over-fitting (by using regularization). Unfortunately, trial and error is the only way to determine the them. Determination of hyper parameter by trial and error is called grid search[4]. To reduce the time taken to determine the best hyperparameters, we increase them in geometric progression.
-
-What are the key components of my approach and results? Also include any specific limitations.
 
 We make four major contributions. First, we use the data set in the running example to train a model using logistic regression using SGD and L-BFGS. We do experiments to compare the running time of Gradient Descent, SGD and L-BFGS. Secondly, we have used regularization and cross-validation to prevent the model over-fitting the data. We report the performance of the model with and without these measures. Thirdly, we also report the accuracy of the model on cross-validation and test data set. Finally, we discuss our results, the strengths and weaknesses of our approach.
 
@@ -82,377 +83,113 @@ Overfitting is defined as a characteristic of a regression model which is based 
 The process of validation includes dividing the training set into two parts namely, the training set and the validation set. The training set is used to train the model and the validation set is used to determine the goodness of the fit. A good fit is determined when accuracy of validation set diverges as compared to the training set. The ratio of the number of examples in the validation set is determined by taking into account the number of training set examples which may represent the model adequately and therefore is not standard. Therefore we split the 70\% input data set as training set and the rest as validation set.
 \subsubsection*{Regularization}
 Regularization is the process of encouraging the parameters to be small especially when the number of observations are smaller than the number of dimensions\cite{ng2004feature}. We use $L_2$ Regularization which subtracts the sum of parameters from the log likelihood. It has a property that it reduces over-fitting as it penalizes the model for large parameter values due to its square term.
+
 \section{Implementation}
 Mention that we are not using centering using mean because it is only useful when the a dimension is offset by a constant factor\cite{bro2003centering}. For example, if height is a dimension then, it can be expected that most dimension values will be more than 1m. Since we do not know for sure if that is the case with our data, we do not use centering.
 http://www.willamette.edu/~gorr/classes/cs449/overfitting.html
 Describe randomization
 \subsection{SGD}
+\subsubsection{Normalization of training data}
+We found that the feature values in the training data varied quite a lot. Many rows had a difference of more than 100 between the maximum and minimum feature values. This would have skewed the results in favor of features with larger magnitudes. We normalized the feature vectors by dividing each feature value by the norm of the entire row's feature vector. This helped scale all feature values to a range between +1 and -1. It also preserved the relative ratios between the values of different features. 
+\subsubsection*{Tuning the learning rate}
+Tuning the learning rate $\lambda$ turned out to be a non-trivial challenge. We found that using a single value of learning rate caused logistic regression to converge fast for some values of hyperparameter $\mu$ and very slowly for other values. 
+\paragraph{Method 1}
+Having realized that we need a more sophisticated approach, we started with reducing the learning rate as the $\bigtriangledown(LCL)$ approached zero. Initially, we simply divided the learning rate by 5 when the $\bigtriangledown(LCL)$ reduced to a value less than a certain threshold. This threshold was set at 1. We also divided the threshold by 5 every time that it was breached. This meant that the learning rate was updated whenever $\bigtriangledown(LCL)$ breached 1,0.2,0.04. Previous to using this method, the $\bigtriangledown(LCL)$ used to overshoot the convergence value. After using this method, the algorithms converged in less than 100 iterations.
+\paragraph{Method 2}
+We used a method described in \cite{settingHyperparameters}. Learning rate was updated according to the formula $\lambda_0/(1+\lambda_0*c*e)$. Based on a few experiments, we set the value to L0 to 0.02 and the value of c to 1.5. \textit{e} was the number of epochs that had elapsed. This method resulted in faster convergence than the method described above.
+
+\subsection{Tuning the initial guess}
+We thought that the best initial guess for the parameters of the model will be the one which takes the conditional likelihood(CL) to its highest value. We approximated the CL function for linear regression to the one below, assuming all $\beta$ to be equal
+
+\begin{align}
+\dfrac{e^{k * \beta}}{1 + e^{n * \beta}}
+\end{align}
+where k is the number of observations with y = 0\\
+and n is the number of observations
+
+
+We used wolfram aplha\cite{} to plot this and find an x which leads to a the maximum CL. Similarly, we used the following function to find the initial guess of regularized model
+
+\begin{align}
+\dfrac{e^{k * \beta}}{1 + e^{n * \beta}} - \mu||\beta||^2
+\end{align}
+where k is the number of observations with y = 0\\
+and n is the number of observations
+
 \subsection{L-BFGS}
-\section{Conclusion}
-\section{Results}
-1. Comparison of number of iterations, accuracy on training set, accuracy on validation set, accuracy on test set for GD vs SGD vs LGBFS\\
-Discussion
-2. Comparison of accuracy of training set, validation set, test set for no regularization, regularization, and regularization without intercept\\
-Discussion
-\section{Content}
-Typically, the body of a paper is organized
-into a hierarchical structure, with numbered or unnumbered
-headings for sections, subsections, sub-subsections, and even
-smaller sections.  The command \texttt{{\char'134}section} that
-precedes this paragraph is part of such a
-hierarchy.\footnote{This is the second footnote.  It
-starts a series of three footnotes that add nothing
-informational, but just give an idea of how footnotes work
-and look. It is a wordy one, just so you see
-how a longish one plays out.} \LaTeX\ handles the numbering
-and placement of these headings for you, when you use
-the appropriate heading commands around the titles
-of the headings.  If you want a sub-subsection or
-smaller part to be unnumbered in your output, simply append an
-asterisk to the command name.  Examples of both
-numbered and unnumbered headings will appear throughout the
-balance of this sample document.
+For L-BFGS, we used the \textsc{matlab} implementation referenced in the project description \cite{lbfgsMatlabImpl}.
 
-Because the entire article is contained in
-the \textbf{document} environment, you can indicate the
-start of a new paragraph with a blank line in your
-input file; that is why this sentence forms a separate paragraph.
+\section{Experiments}
+In our study of classifying observations into gender classes using logisitc regression, we used two algorithms namely SGD and L-BFGS.
 
-\subsection{Type Changes and {\subsecit Special} Characters}
-We have already seen several typeface changes in this sample.  You
-can indicate italicized words or phrases in your text with
-the command \texttt{{\char'134}textit}; emboldening with the
-command \texttt{{\char'134}textbf}
-and typewriter-style (for instance, for computer code) with
-\texttt{{\char'134}texttt}.  But remember, you do not
-have to indicate typestyle changes when such changes are
-part of the \textit{structural} elements of your
-article; for instance, the heading of this subsection will
-be in a sans serif\footnote{A third footnote, here.
-Let's make this a rather short one to
-see how it looks.} typeface, but that is handled by the
-document class file. Take care with the use
-of\footnote{A fourth, and last, footnote.}
-the curly braces in typeface changes; they mark
-the beginning and end of
-the text that is to be in the different typeface.
-
-You can use whatever symbols, accented characters, or
-non-English characters you need anywhere in your document;
-you can find a complete list of what is
-available in the \textit{\LaTeX\
-User's Guide}\cite{Lamport:LaTeX}.
-
-\subsection{Math Equations}
-You may want to display math equations in three distinct styles:
-inline, numbered or non-numbered display.  Each of
-the three are discussed in the next sections.
-
-\subsubsection{Inline (In-text) Equations}
-A formula that appears in the running text is called an
-inline or in-text formula.  It is produced by the
-\textbf{math} environment, which can be
-invoked with the usual \texttt{{\char'134}begin. . .{\char'134}end}
-construction or with the short form \texttt{\$. . .\$}. You
-can use any of the symbols and structures,
-from $\alpha$ to $\omega$, available in
-\LaTeX\cite{Lamport:LaTeX}; this section will simply show a
-few examples of in-text equations in context. Notice how
-this equation: \begin{math}\lim_{n\rightarrow \infty}x=0\end{math},
-set here in in-line math style, looks slightly different when
-set in display style.  (See next section).
-
-\subsubsection{Display Equations}
-A numbered display equation -- one set off by vertical space
-from the text and centered horizontally -- is produced
-by the \textbf{equation} environment. An unnumbered display
-equation is produced by the \textbf{displaymath} environment.
-
-Again, in either environment, you can use any of the symbols
-and structures available in \LaTeX; this section will just
-give a couple of examples of display equations in context.
-First, consider the equation, shown as an inline equation above:
-\begin{equation}\lim_{n\rightarrow \infty}x=0\end{equation}
-Notice how it is formatted somewhat differently in
-the \textbf{displaymath}
-environment.  Now, we'll enter an unnumbered equation:
-\begin{displaymath}\sum_{i=0}^{\infty} x + 1\end{displaymath}
-and follow it with another numbered equation:
-\begin{equation}\sum_{i=0}^{\infty}x_i=\int_{0}^{\pi+2} f\end{equation}
-just to demonstrate \LaTeX's able handling of numbering.
-
-\subsection{Citations}
-Citations to articles \cite{bowman:reasoning, clark:pct, braams:babel, herlihy:methodology},
-conference
-proceedings \cite{clark:pct} or books \cite{salas:calculus, Lamport:LaTeX} listed
-in the Bibliography section of your
-article will occur throughout the text of your article.
-You should use BibTeX to automatically produce this bibliography;
-you simply need to insert one of several citation commands with
-a key of the item cited in the proper location in
-the \texttt{.tex} file \cite{Lamport:LaTeX}.
-The key is a short reference you invent to uniquely
-identify each work; in this sample document, the key is
-the first author's surname and a
-word from the title.  This identifying key is included
-with each item in the \texttt{.bib} file for your article.
-
-The details of the construction of the \texttt{.bib} file
-are beyond the scope of this sample document, but more
-information can be found in the \textit{Author's Guide},
-and exhaustive details in the \textit{\LaTeX\ User's
-Guide}\cite{Lamport:LaTeX}.
-
-This article shows only the plainest form
-of the citation command, using \texttt{{\char'134}cite}.
-This is what is stipulated in the SIGS style specifications.
-No other citation format is endorsed.
-
-\subsection{Tables}
-Because tables cannot be split across pages, the best
-placement for them is typically the top of the page
-nearest their initial cite.  To
-ensure this proper ``floating'' placement of tables, use the
-environment \textbf{table} to enclose the table's contents and
-the table caption.  The contents of the table itself must go
-in the \textbf{tabular} environment, to
-be aligned properly in rows and columns, with the desired
-horizontal and vertical rules.  Again, detailed instructions
-on \textbf{tabular} material
-is found in the \textit{\LaTeX\ User's Guide}.
-
-Immediately following this sentence is the point at which
-Table 1 is included in the input file; compare the
-placement of the table here with the table in the printed
-dvi output of this document.
-
-\begin{table}
+\begin{figure}\label{SGD_(not_Regularized)_Accuracy_vs_Epochs}
 \centering
-\caption{Frequency of Special Characters}
-\begin{tabular}{|c|c|l|} \hline
-Non-English or Math&Frequency&Comments\\ \hline
-\O & 1 in 1,000& For Swedish names\\ \hline
-$\pi$ & 1 in 5& Common in math\\ \hline
-\$ & 4 in 5 & Used in business\\ \hline
-$\Psi^2_1$ & 1 in 40,000& Unexplained usage\\
-\hline\end{tabular}
-\end{table}
+\includegraphics[scale=0.4]{SGD_(not_Regularized)_Accuracy_vs_Epochs.eps}
+\caption{Stochastic Gradient Descent: Accuracy of trained models improves with number of training epochs}
+\end{figure}
 
-To set a wider table, which takes up the whole width of
-the page's live area, use the environment
-\textbf{table*} to enclose the table's contents and
-the table caption.  As with a single-column table, this wide
-table will ``float" to a location deemed more desirable.
-Immediately following this sentence is the point at which
-Table 2 is included in the input file; again, it is
-instructive to compare the placement of the
-table here with the table in the printed dvi
-output of this document.
-
-
-\begin{table*}
+\begin{figure}\label{accuracy_vs_epochs_l2_regularized}
 \centering
-\caption{Some Typical Commands}
-\begin{tabular}{|c|c|l|} \hline
-Command&A Number&Comments\\ \hline
-\texttt{{\char'134}alignauthor} & 100& Author alignment\\ \hline
-\texttt{{\char'134}numberofauthors}& 200& Author enumeration\\ \hline
-\texttt{{\char'134}table}& 300 & For tables\\ \hline
-\texttt{{\char'134}table*}& 400& For wider tables\\ \hline\end{tabular}
-\end{table*}
-% end the environment with {table*}, NOTE not {table}!
+\includegraphics[scale=0.25]{accuracy_vs_epochs_l2_regularized.eps}
+\caption{$L_{2}$ Regularized Stochastic Gradient Descent : Accuracy of trained models improves with number of training epochs}
+\end{figure}
 
-\subsection{Figures}
-Like tables, figures cannot be split across pages; the
-best placement for them
-is typically the top or the bottom of the page nearest
-their initial cite.  To ensure this proper ``floating'' placement
-of figures, use the environment
-\textbf{figure} to enclose the figure and its caption.
-
-This sample document contains examples of \textbf{.eps}
-and \textbf{.ps} files to be displayable with \LaTeX.  More
-details on each of these is found in the \textit{Author's Guide}.
+\begin{figure}\label{SGD_Regularized_Log_Likelihood}
+\centering
+\includegraphics[scale=0.5]{Regularized_Log_Likelihood.eps}
+\caption{$L_{2}$ Regularized Stochastic Gradient Descent :Regularized LCL vs Number of Epochs}
+\end{figure}
 
 \begin{figure}
 \centering
-\epsfig{file=fly.eps, height=1in, width=1in}
-\caption{A sample black and white graphic (.eps format)
-that has been resized with the \texttt{epsfig} command.}
+\includegraphics[scale=0.4]{Log_likelihood_for_SGD_(Not_Regularized).eps}
+\caption{Stochastic Gradient Descent : LCL vs Number of Epochs}
 \end{figure}
 
+SGD implementation was done both with and without regularization until convergence as shown in \ref{SGD_Regularized_Log_Likelihood} and \ref{SGD_(not_Regularized)_Accuracy_vs_Epochs} the process converged to a stable value As shown in \ref{SGD_(not_Regularized)_Accuracy_vs_Epochs} SGD and \ref{accuracy_vs_epochs_l2_regularized} without regularization seems to converge faster. This could be attributed to the fact that inverse dampening worked when used with SGD without regularization but did not when it was used with SGD with regularization. This is because the learning rate becomes smaller faster than SGD could converge. Any change in SGD beyond that point was very small and we realized that using inverse dampening could be counter-productive when used with regularization. Thus, we used constant learning rate for SGD with regularization. We believe that more experiments with more diverse data sets need to be performed to say if this process works better.
 
-As was the case with tables, you may want a figure
-that spans two columns.  To do this, and still to
-ensure proper ``floating'' placement of tables, use the environment
-\textbf{figure*} to enclose the figure and its caption.
+In both these experiments, we measured validation accuracy with test accuracy. We hypothesize that as model reaches convergence, it validation accuracy increases and it tops when model is just right. As model is tried to be fit on further epochs, it overfits the training data. Hence, may not represent the best model. Accordingly, we found that validation accuracy first increases with epochs and after achieving the maximum, it decreases before becoming constant. We take models of the parameters at the point validation accuracy is maximum, instead of the point where validation accuracy stabilizes. This process did improve the accuracy of the model on test marginally, but, we did not find a sizeable difference in the performance of model.
 
-Note that either {\textbf{.ps}} or {\textbf{.eps}} formats are
-used; use
-the \texttt{{\char'134}epsfig} or \texttt{{\char'134}psfig}
-commands as appropriate for the different file types.
+\begin{figure}\label{accuracy_vs_mu_l2_regularized}
+\centering
+\includegraphics[scale=0.25]{accuracy_vs_mu_l2_regularized.eps}
+\caption{$L_{2}$ Regularized Stochastic Gradient Descent : Accuracy vs Hyperparameter $\mu$}
+\end{figure}
 
-\subsection{Theorem-like Constructs}
-Other common constructs that may occur in your article are
-the forms for logical constructs like theorems, axioms,
-corollaries and proofs.  There are
-two forms, one produced by the
-command \texttt{{\char'134}newtheorem} and the
-other by the command \texttt{{\char'134}newdef}; perhaps
-the clearest and easiest way to distinguish them is
-to compare the two in the output of this sample document:
+Derivation of the model with regularization also requires grid search for a hyperparameter called strength of regularization $\mu$. As shown in figure \ref{accuracy_vs_mu_l2_regularized} we find the value of $\mu=10^{-2}$ where validation accuracy is equal to the training accuracy. We think that this is a good trade-off between over-fitting and model accuracy.
 
-This uses the \textbf{theorem} environment, created by
-the\linebreak\texttt{{\char'134}newtheorem} command:
-\newtheorem{theorem}{Theorem}
-\begin{theorem}
-Let $f$ be continuous on $[a,b]$.  If $G$ is
-an antiderivative for $f$ on $[a,b]$, then
-\begin{displaymath}\int^b_af(t)dt = G(b) - G(a).\end{displaymath}
-\end{theorem}
+During the grid search, for different $\mu$ we used different learning rates, $\lambda$ for faster convergence. We noticed that smaller $mu$ required smaller $\lambda$. We did not investigate a precise relationship between these parameters since learning rate only helps in faster convergence and doesn't contribute to accuracy of the model. As shown in figure \ref{accuracy_vs_mu_l2_regularized}, as $\mu$ decreases, the accuracy of the model increases. We expected accuracy to decrease with $\mu$ but we did not observe that trend. We think that this is because feature set is comprehensive enough to represent the model and therefore regularization doesn't vastly improve peak performance. Therefore, we find that for lower values of regularization, the accuracy tends to the unregularized SGD model.
 
-The other uses the \textbf{definition} environment, created
-by the \texttt{{\char'134}newdef} command:
-\newdef{definition}{Definition}
-\begin{definition}
-If $z$ is irrational, then by $e^z$ we mean the
-unique number which has
-logarithm $z$: \begin{displaymath}{\log e^z = z}\end{displaymath}
-\end{definition}
+\subsection{L-BFGS}
+\begin{figure}\label{LBFGS_Graph}
+\centering
+\includegraphics[scale=0.4]{LBFGS_Graph.eps}
+\caption{L-BFGS : Accuracy vs parameter $log_2{\mu}$}
+\end{figure}
 
-Two lists of constructs that use one of these
-forms is given in the
-\textit{Author's  Guidelines}.
+The only tunable parameter in this implementation is vector of values that has to be input to the algorithm. This parameter was varied in steps from $2^{-10}$,$2^{-9}$,$2^{-8}$ ... $2^{9}$,$2^{10}$. The optimum weight vector for each of these parameters was recorded. The optimal model was achieved for parameter value $2^{-6}$. We then calculated the accuracy of this model using the validation set. The model which fit the validation set with the highest accuracy was used to predict values on the test set. Refer to figure \ref{LBFGS_Graph}.
 
-and don't forget to end the environment with
-{figure*}, not {figure}!
- 
-There is one other similar construct environment, which is
-already set up
-for you; i.e. you must \textit{not} use
-a \texttt{{\char'134}newdef} command to
-create it: the \textbf{proof} environment.  Here
-is a example of its use:
-\begin{proof}
-Suppose on the contrary there exists a real number $L$ such that
-\begin{displaymath}
-\lim_{x\rightarrow\infty} \frac{f(x)}{g(x)} = L.
-\end{displaymath}
-Then
-\begin{displaymath}
-l=\lim_{x\rightarrow c} f(x)
-= \lim_{x\rightarrow c}
-\left[ g{x} \cdot \frac{f(x)}{g(x)} \right ]
-= \lim_{x\rightarrow c} g(x) \cdot \lim_{x\rightarrow c}
-\frac{f(x)}{g(x)} = 0\cdot L = 0,
-\end{displaymath}
-which contradicts our assumption that $l\neq 0$.
-\end{proof}
+\begin{figure}\label{All_accuracies_in_one}
+\centering
+\includegraphics[scale=0.25]{All_accuracies_in_one.eps}
+\caption{Accuracies for all SGD variants - $L_{2}$ Regularized and vanilla SGD}
+\end{figure}
+\bigskip
+\subsection{Accuracy}
+The model we derive seems to be a good fit to the data as we get comparable accuracy as other implementations \cite{mpComp}. As shown in figure \ref{All_accuracies_in_one} we consistently achieve about 90\% accuracy when model is run on test set for all our experiments namely SGD without regularization, SGD with regularization and L-BFGS. Our model also shows similar accuracy on validation set, which shows that we could avoid overfitting of the model on training set; though, accuracy of model on training set does reach 100\% in case of SGD without regularization and L-BFGS. We also notice that  adding regularization reduces overfitting as training data doesn't reach 100\% accuracy for SGD with regularization while the model still maintains a good accuracy on test and validation set.
 
-Complete rules about using these environments and using the
-two different creation commands are in the
-\textit{Author's Guide}; please consult it for more
-detailed instructions.  If you need to use another construct,
-not listed therein, which you want to have the same
-formatting as the Theorem
-or the Definition\cite{salas:calculus} shown above,
-use the \texttt{{\char'134}newtheorem} or the
-\texttt{{\char'134}newdef} command,
-respectively, to create it.
-
-\subsection*{A {\secit Caveat} for the \TeX\ Expert}
-Because you have just been given permission to
-use the \texttt{{\char'134}newdef} command to create a
-new form, you might think you can
-use \TeX's \texttt{{\char'134}def} to create a
-new command: \textit{Please refrain from doing this!}
-Remember that your \LaTeX\ source code is primarily intended
-to create camera-ready copy, but may be converted
-to other forms -- e.g. HTML. If you inadvertently omit
-some or all of the \texttt{{\char'134}def}s recompilation will
-be, to say the least, problematic.
-
-\section{Conclusions}
-This paragraph will end the body of this sample document.
-Remember that you might still have Acknowledgments or
-Appendices; brief samples of these
-follow.  There is still the Bibliography to deal with; and
-we will make a disclaimer about that here: with the exception
-of the reference to the \LaTeX\ book, the citations in
-this paper are to articles which have nothing to
-do with the present subject and are used as
-examples only.
-%\end{document}  % This is where a 'short' article might terminate
-
-%ACKNOWLEDGMENTS are optional
-\section{Acknowledgments}
-This section is optional; it is a location for you
-to acknowledge grants, funding, editing assistance and
-what have you.  In the present case, for example, the
-authors would like to thank Gerald Murray of ACM for
-his help in codifying this \textit{Author's Guide}
-and the \textbf{.cls} and \textbf{.tex} files that it describes.
-
+\section{Conclusion}
+We have presented a nuanced analysis of two major optimization algorithms used in logistic regression  - Stochastic Gradient Descent and L-BFGS. Using grid search, we learned the optimal value of the hyperparameter. Tuning the learning rate turned out to be one of the most difficulat parts of using SGD.\\
+Due to the small size of training set, overfitting was always a challenge. However, using $L_{2}$ regularization helped reduce any overfitting to a great extent. The reported accuracy values(\ref{All_accuracies_in_one}) show an acceptable error rate (about 10\%) for both regularized models.
+\\
+One of the drawbacks of this model is that it has been trained on a data set where the number of training examples is far fewer than the number of features. Better models could have been developed with more data.
+1. Comparison of number of iterations, accuracy on training set, accuracy on validation set, accuracy on test set for GD vs SGD vs LGBFS\\
+Discussion
+2. Comparison of accuracy of training set, validation set, test set for no regularization, regularization, and regularization without intercept\\
 %
 % The following two commands are all you need in the
 % initial runs of your .tex file to
 % produce the bibliography for the citations in your paper.
 \bibliographystyle{abbrv}
-\bibliography{Report}  % sigproc.bib is the name of the Bibliography in this case
-% You must have a proper ".bib" file
-%  and remember to run:
-% latex bibtex latex latex
-% to resolve all references
-%
-% ACM needs 'a single self-contained file'!
-%
-%APPENDICES are optional
-%\balancecolumns
-\appendix
-%Appendix A
-\section{Headings in Appendices}
-The rules about hierarchical headings discussed above for
-the body of the article are different in the appendices.
-In the \textbf{appendix} environment, the command
-\textbf{section} is used to
-indicate the start of each Appendix, with alphabetic order
-designation (i.e. the first is A, the second B, etc.) and
-a title (if you include one).  So, if you need
-hierarchical structure
-\textit{within} an Appendix, start with \textbf{subsection} as the
-highest level. Here is an outline of the body of this
-document in Appendix-appropriate form:
-\subsection{Introduction}
-\subsection{The Body of the Paper}
-\subsubsection{Type Changes and  Special Characters}
-\subsubsection{Math Equations}
-\paragraph{Inline (In-text) Equations}
-\paragraph{Display Equations}
-\subsubsection{Citations}
-\subsubsection{Tables}
-\subsubsection{Figures}
-\subsubsection{Theorem-like Constructs}
-\subsubsection*{A Caveat for the \TeX\ Expert}
-\subsection{Conclusions}
-\subsection{Acknowledgments}
-\subsection{Additional Authors}
-This section is inserted by \LaTeX; you do not insert it.
-You just add the names and information in the
-\texttt{{\char'134}additionalauthors} command at the start
-of the document.
-\subsection{References}
-Generated by bibtex from your ~.bib file.  Run latex,
-then bibtex, then latex twice (to resolve references)
-to create the ~.bbl file.  Insert that ~.bbl file into
-the .tex source file and comment out
-the command \texttt{{\char'134}thebibliography}.
-% This next section command marks the start of
-% Appendix B, and does not continue the present hierarchy
-\section{More Help for the Hardy}
-The acm\_proc\_article-sp document class file itself is chock-full of succinct
-and helpful comments.  If you consider yourself a moderately
-experienced to expert user of \LaTeX, you may find reading
-it useful but please remember not to change it.
-\balancecolumns
-% That's all folks!
+\bibliography{Report} 
 \end{document}

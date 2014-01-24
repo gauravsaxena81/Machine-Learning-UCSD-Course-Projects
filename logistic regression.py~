@@ -2,7 +2,7 @@ import numpy as np
 import math
 from numpy import linalg as LA
 
-LAMBDA = 200
+LAMBDA = 100
 RUNS=15
 """
 Import data from file to a numpy array
@@ -64,8 +64,6 @@ def calculate_label(matrix,betas):
 
 def calculate_differential(matrix,betas):
 	sum = 0
-	lcl = 0
-	count = 0
 	for i in range(len(matrix)):
 		p=np.dot(betas,matrix[i][:801])
 		p=sigmoid(p)
@@ -73,42 +71,19 @@ def calculate_differential(matrix,betas):
 		for j in range(len(matrix[i][:801])):
 			x=matrix[i][j]
 			sum += (y-p)*x
-		#print y, p
-		lcl += y*math.log(p + 0.000001) + (1-y)*math.log(1-p + 0.000001)
-		if p < 0.5 and y == 0 :
-                        count += 1
-                if p >= 0.5 and y == 1 :
-                        count += 1
-        return sum, lcl, float(count) / len(matrix)
-def calculateValidationAccuracy(matrix, betas):
-        count = 0
-        for i in range(len(matrix)):
-                p=np.dot(betas,matrix[i][:801])
-                p=sigmoid(p)
-                y=matrix[i][801]
-                if p < 0.5 and y == 0 :
-                        count += 1
-                if p >= 0.5 and y == 1 :
-                        count += 1
-        return float(count) / len(matrix)
+	return sum
 
 def main():
-	matrix_full=importdata(559,802,'./train')
-	matrix = matrix_full[:400]
+	matrix=importdata(559,802,'./Logistic Regression/train')
 	matrix=matrix[matrix[:,440].argsort()]
 	#temp=np.ones(1,559)
 	save_to_file("array.bin",matrix)
 	betas=np.ones((1,801))
 	betas[0][:400].fill(0.0125)
-	betas[0][400:].fill(0.0125)
+	betas[0][400:].fill(-0.0125)
 	#Remember to randomize the dataset using random.randint(a,b)
-	#for runs in range(RUNS):
-	DEL_LCL = 10
-	LCL = 0
-	runs = 0
-	lastValAccuracy = 0
-	global LAMBDA
-	while abs(DEL_LCL) > 0.01:
+	for runs in range(RUNS):
+		print runs
 		for i in range(len(matrix)):
 			p=np.dot(betas,matrix[i][:801])
 			p=sigmoid(p)
@@ -116,17 +91,12 @@ def main():
 			for j in range(len(matrix[i][:801])):	
 				x=matrix[i][j]
 				betas[0][j] += LAMBDA*(y-p)*x
-		lastDelLcl = DEL_LCL
-		DEL_LCL, LCL, trainAccuracy =  calculate_differential(matrix,betas)
-		#LAMBDA =  1 / abs(DEL_LCL - lastDelLcl)
-		LAMBDA = 50 / (1 + 1.5  * runs)
-		valAccuracy = calculateValidationAccuracy(matrix_full[401:], betas)
-		if valAccuracy > lastValAccuracy :
-			lastValAccuracy = valAccuracy
-			bestBetas = betas
-		print runs, DEL_LCL, trainAccuracy, valAccuracy		
-		runs += 1
-	save_to_file("logistic_regression_beta_values_sorted.bin",bestBetas)
+		#if runs%20 == 0:
+	#		print runs
+		print calculate_differential(matrix,betas)
+	print betas
+	save_to_file("logistic_regression_beta_values_sorted.bin",betas)
+	#calculate_label(matrix,betas)
 main()
 
 #betas = load_from_file("experimental_betas.bin")

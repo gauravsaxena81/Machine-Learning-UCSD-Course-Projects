@@ -1,4 +1,5 @@
 import numpy as np
+import math
 """
 Load array from file
 """
@@ -8,15 +9,31 @@ def load_from_file(filename):
 	return matrix
 
 def calculate_accuracy(betas_filename,data_filename):
+	#Test
 	matrix=load_from_file(data_filename)
+	#Train
+	#matrix=load_from_file(data_filename)[:400]
+	#Validation
+	#matrix=load_from_file(data_filename)[401:]
 	betas=load_from_file(betas_filename)
 	count=0
 	for i in range(len(matrix)):
 		temp=np.dot(betas,matrix[i][:801])
+		#temp = 1 / (1 + math.exp(-temp))
 		if temp >= 0.5 and matrix[i][801] == 1:
 			count += 1
 		if temp < 0.5 and matrix[i][801] == 0:
 			count += 1
 	print float(count)/float(len(matrix))
 
-calculate_accuracy("logistic_regression_beta_values_sorted.bin","test.bin")
+#Without regularization
+#calculate_accuracy("logistic_regression_beta_values_sorted.bin","train.bin")
+#calculate_accuracy("logistic_regression_beta_values_with_regularization_sortedOnY.bin","train.bin");
+#Regularization
+#calculate_accuracy("logistic_regression_beta_values_sorted.bin","train.bin")
+#calculate_accuracy("logistic_regression_beta_values_with_regularization_sortedOnY.bin","train.bin");
+#
+#Test
+#calculate_accuracy("logistic_regression_beta_values_sorted.bin","test.bin")
+calculate_accuracy("logistic_regression_beta_values_with_regularization_sortedOnY.bin","test.bin");
+

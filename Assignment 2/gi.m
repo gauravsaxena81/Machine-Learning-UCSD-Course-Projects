@@ -4,4 +4,4 @@ function x = gi(yiminus1, yi, xbar, i, ff, w)
     sum = 0;
     size = size(ff);
     for i = 0:size
-        sum = sum + w(i)* f{1}(yiminus1, yi, xbar, i);
+        sum = sum + w(i)* ff{1}(yiminus1, yi, xbar, i);

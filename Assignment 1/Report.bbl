@@ -1,0 +1,45 @@
+\begin{thebibliography}{1}
+
+\bibitem{mpComp}
+Ml comp gender recognition dataset, Jan. 2014.
+
+\bibitem{babyak2004you}
+M.~A. Babyak.
+\newblock What you see may not be what you get: a brief, nontechnical
+  introduction to overfitting in regression-type models.
+\newblock {\em Psychosomatic medicine}, 66(3):411--421, 2004.
+
+\bibitem{settingHyperparameters}
+L.~Bottou.
+\newblock Stochastic gradient descent (version 2), Jan. 2014.
+
+\bibitem{bro2003centering}
+R.~Bro and A.~K. Smilde.
+\newblock Centering and scaling in component analysis.
+\newblock {\em Journal of Chemometrics}, 17(1):16--33, 2003.
+
+\bibitem{efron1975efficiency}
+B.~Efron.
+\newblock The efficiency of logistic regression compared to normal discriminant
+  analysis.
+\newblock {\em Journal of the American Statistical Association},
+  70(352):892--898, 1975.
+
+\bibitem{malouf2002comparison}
+R.~Malouf et~al.
+\newblock A comparison of algorithms for maximum entropy parameter estimation.
+\newblock In {\em Proceedings of the sixth conference on natural language
+  learning (CoNLL-2002)}, pages 49--55, 2002.
+
+\bibitem{ng2004feature}
+A.~Y. Ng.
+\newblock Feature selection, l 1 vs. l 2 regularization, and rotational
+  invariance.
+\newblock In {\em Proceedings of the twenty-first international conference on
+  Machine learning}, page~78. ACM, 2004.
+
+\bibitem{lbfgsMatlabImpl}
+M.~Schmidt.
+\newblock Matlab minfunc implementation, Jan. 2014.
+
+\end{thebibliography}

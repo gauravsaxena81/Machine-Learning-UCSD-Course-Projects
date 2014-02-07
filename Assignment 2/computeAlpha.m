@@ -1,1 +1,12 @@
-function 
+function x=alpha(M,N)
+%M : Size of tag set
+%N : Number of words in a sentence
+x=ones(M,N)
+for i=1:M % COLUMNS
+    for j=1:N %ROWS
+        if j==0 && i==0
+            x(i,j)=1
+        elseif i==0
+        end
+    end
+end
